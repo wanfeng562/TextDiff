@@ -24,6 +24,12 @@
 
   "upsample_mode":"bilinear",
   "share_noise": true,
-  "input_activations": false
- }
+  "input_activations": false,
+
+  "num_clusters": 12, 
+  "d_f": 256,  
+  "cluster_id_path": "./experiments/monuseg_2/cluster_id_map.json",  
+  "init_cluster_centers": true,  
+  "cluster_centers_path": "./experiments/monuseg_2/cluster_centers.npy"
+}
 
