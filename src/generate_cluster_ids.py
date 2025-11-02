@@ -28,3 +28,12 @@ def generate_cluster_ids(opts):
     with open(os.path.join(opts['exp_dir'], 'cluster_id_map.json'), 'w') as f:
         json.dump(cluster_id_map, f)
     print(f"生成{opts['num_clusters']}个聚类，保存至{opts['exp_dir']}")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', type=str, required=True)
+    parser.add_argument('--num_clusters', type=int, default=12)  # K值
+    args = parser.parse_args()
+    opts = json.load(open(args.exp, 'r'))
+    opts['num_clusters'] = args.num_clusters
+    generate_cluster_ids(opts)

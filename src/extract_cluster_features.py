@@ -105,3 +105,11 @@ def extract_cluster_features(opts):
     # 保存文件名映射，便于后续将聚类结果映射回原始样本
     with open(os.path.join(opts['exp_dir'], 'filenames.json'), 'w') as f:
         json.dump(filenames, f)
+        
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', type=str, required=True)  # 配置文件路径
+    args = parser.parse_args()
+    opts = json.load(open(args.exp, 'r'))
+    os.makedirs(opts['exp_dir'], exist_ok=True)
+    extract_cluster_features(opts)
