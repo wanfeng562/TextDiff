@@ -13,6 +13,7 @@ import cv2
 from scipy import ndimage
 from transformers import AutoTokenizer, AutoModel
 import natsort
+import json
 
 
 def random_rot_flip(image, label):
@@ -142,10 +143,10 @@ class LV2D(Dataset):
 
         return sample, mask_filename
 
-
+# 新增，在Mixdataset中添加聚类ID的加载
 class Mixdataset(Dataset):
     def __init__(self, dataset_path: str, row_text: str, joint_transform: Callable = None,
-                 one_hot_mask: int = False, ) -> None:
+                 one_hot_mask: int = False, cluster_id_path: str = None) -> None:
         self.dataset_path = dataset_path
         self.input_path = os.path.join(dataset_path, 'img')
         self.output_path = os.path.join(dataset_path, 'labelcol')
@@ -164,6 +165,12 @@ class Mixdataset(Dataset):
         else:
             to_tensor = T.ToTensor()
             self.joint_transform = lambda x, y: (to_tensor(x), to_tensor(y))
+        
+        self.cluster_id_map = None # 添加属性以存储聚类ID映射
+        # 如果提供了cluster_id_path，则加载映射文件
+        if cluster_id_path and os.path.exists(cluster_id_path):
+            with open(cluster_id_path, 'r') as f:
+                self.cluster_id_map = json.load(f) #文件名到cluster_id的映射
 
     def __len__(self):
         return len(self.images_list)
@@ -184,6 +191,12 @@ class Mixdataset(Dataset):
         image, mask = correct_dims(image, mask)
         text = self.rowtext[mask_name]
         text = text.split('\n')
+        
+        # 新增: 获取当前样本的cluster_id
+        cluster_id = 0
+        if self.cluster_id_map is not None:
+            filename = os.path.splitext(img_name)[0]
+            cluster_id = self.cluster_id_map.get(filename, 0)  # 默认cluster_id为0
 
         with torch.no_grad():
             text_inputs = self.tokenizer(text,return_tensors='pt', padding='max_length', truncation=True, max_length=10)
@@ -194,7 +207,8 @@ class Mixdataset(Dataset):
             assert self.one_hot_mask > 0, 'one_hot_mask must be nonnegative'
             mask = torch.zeros((self.one_hot_mask, mask.shape[1], mask.shape[2])).scatter_(0, mask.long(), 1)
 
-        sample = {'image': image, 'label': mask, 'text': text, 'name':os.path.splitext(img_name)[0]}
+        # 新增cluster_id字段
+        sample = {'image': image, 'label': mask, 'text': text, 'name':os.path.splitext(img_name)[0], 'cluster_id': cluster_id}
         if self.joint_transform:
             sample = self.joint_transform(sample)
 
